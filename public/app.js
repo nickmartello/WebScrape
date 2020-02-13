@@ -1,72 +1,138 @@
-// Grab the articles as a json
-$.getJSON("/articles", function(data) {
-  // For each one
-  for (var i = 0; i < data.length; i++) {
-    // Display the apropos information on the page
-    $("#articles").append("<p data-id='" + data[i]._id + "'>" + data[i].title);
+$(document).ready(function () {
+  $(document).on("click", ".scrape-new", scrapeArticle);
+  $(document).on("click", ".clear", clearArticle);
+  $(document).on("click", ".clear-saved", clearSavedArticle);
+  $(document).on("click", ".save", saveArticle);
+  $(document).on("click", ".delete", deleteSavedArticle);
+  $(document).on("click", ".notes", addNotesToArticle);
+  $(document).on("click", ".note-save", saveNote);
+  $(document).on("click", ".note-delete", deleteNote);
+
+  function scrapeArticle() {
+      $(".article-container").prepend('<div class="loader"></div>');
+      $.get("/api/fetch").then(function (data) {
+          console.log(data)
+          setTimeout(
+              function () {
+                  window.location.href = "/";
+              }, 2000);
+      });
   }
-});
 
+  function clearArticle() {
+      $.get("/api/clear").then(function (data) {
+          console.log(data)
+          $(".articleContainer").empty();
+          location.reload();
+      });
+  }
 
-// Whenever someone clicks a p tag
-$(document).on("click", "p", function() {
-  // Empty the notes from the note section
-  $("#notes").empty();
-  // Save the id from the p tag
-  var thisId = $(this).attr("data-id");
+  function clearSavedArticle() {
+      $.get("/api/clear/saved").then(function (data) {
+          console.log(data)
+          $(".articleContainer").empty();
+          location.reload();
+      });
+  }
 
-  // Now make an ajax call for the Article
-  $.ajax({
-    method: "GET",
-    url: "/articles/" + thisId
-  })
-    // With that done, add the note information to the page
-    .then(function(data) {
-      console.log(data);
-      // The title of the article
-      $("#notes").append("<h2>" + data.title + "</h2>");
-      // An input to enter a new title
-      $("#notes").append("<input id='titleinput' name='title' >");
-      // A textarea to add a new note body
-      $("#notes").append("<textarea id='bodyinput' name='body'></textarea>");
-      // A button to submit a new note, with the id of the article saved to it
-      $("#notes").append("<button data-id='" + data._id + "' id='savenote'>Save Note</button>");
+  function saveArticle() {
+      let articleID = $(this)
+          .parents(".card")
+          .data();
 
-      // If there's a note in the article
-      if (data.note) {
-        // Place the title of the note in the title input
-        $("#titleinput").val(data.note.title);
-        // Place the body of the note in the body textarea
-        $("#bodyinput").val(data.note.body);
+      $(this)
+          .parents(".card")
+          .remove();
+
+      $.ajax({
+          method: "PUT",
+          url: "/api/save/" + articleID._id
+      }).then(function (data) {
+          console.log(data);
+      });
+  }
+
+  function deleteSavedArticle() {
+      let articleID = $(this)
+          .parents(".card")
+          .data();
+
+      $(this)
+          .parents(".card")
+          .remove();
+
+      $.get("/api/deleteSaved/" + articleID._id);
+  }
+
+  function addNotesToArticle() {
+      let articleID = $(this)
+          .parents(".card")
+          .data();
+
+      $.get("/api/notes/" + articleID._id).then(function (data) {
+          console.log(data)
+         let modalText = $("<div class='container-fluid text-center'>").append(
+              $("<h4>").text("Notes For Article: " + articleID._id),
+              $("<hr>"),
+              $("<ul class='list-group note-container'>"),
+              $("<textarea placeholder='New Note' rows='4' cols='50'>"),
+              $("<button class='btn btn-success note-save'>Save Note</button>")
+          );
+          console.log(modalText)
+          bootbox.dialog({
+              message: modalText,
+              closeButton: true
+          });
+          let noteData = {
+              _id: articleID._id,
+              notes: data || []
+          };
+          console.log('noteData:' + JSON.stringify(noteData))
+          $(".note-save").data("article", noteData);
+          getAllNotes(noteData);
+      });
+  }
+
+  function deleteNote() {
+      let noteID = $(this).data("_id");
+      $.ajax({
+          url: "/api/notes/" + noteID,
+          method: "DELETE"
+      }).then(function () {
+          bootbox.hideAll();
+      });
+  }
+
+  function saveNote() {
+      let noteData;
+      let newNote = $(".bootbox-body textarea")
+          .val()
+          .trim();
+      console.log(newNote);
+      if (newNote) {
+          noteData = { _headlineId: $(this).data("article")._id, noteText: newNote };
+          console.log(noteData);
+          $.post("/api/notes", noteData).then(function () {
+              bootbox.hideAll();
+          });
       }
-    });
-});
+  }
 
-// When you click the savenote button
-$(document).on("click", "#savenote", function() {
-  // Grab the id associated with the article from the submit button
-  var thisId = $(this).attr("data-id");
-
-  // Run a POST request to change the note, using what's entered in the inputs
-  $.ajax({
-    method: "POST",
-    url: "/articles/" + thisId,
-    data: {
-      // Value taken from title input
-      title: $("#titleinput").val(),
-      // Value taken from note textarea
-      body: $("#bodyinput").val()
-    }
-  })
-    // With that done
-    .then(function(data) {
-      // Log the response
-      console.log(data);
-      // Empty the notes section
-      $("#notes").empty();
-    });
-
-  // Also, remove the values entered in the input and textarea for note entry
-  $("#titleinput").val("");
-  $("#bodyinput").val("");
+  function getAllNotes(data) {
+      let notesToRender = [];
+      let currentNote;
+      if (!data.notes.length) {
+          currentNote = $("<li class='list-group-item'>No notes for this article yet.</li>");
+          notesToRender.push(currentNote);
+      } else {
+          for (let i = 0; i < data.notes.length; i++) {
+              currentNote = $("<li class='list-group-item note'>")
+                  .text(data.notes[i].noteText)
+                  .append($("<button class='btn btn-danger note-delete'>x</button>"));
+              currentNote.children("button").data("_id", data.notes[i]._id);
+              notesToRender.push(currentNote);
+          }
+      }
+      $(".note-container").append(notesToRender);
+  }
 });
