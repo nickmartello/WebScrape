@@ -62,7 +62,7 @@ function createCard(data) {
 
   for (let i = 0; i < data.length; i++) {  
 
-      let thediv = $("<div>")
+      let mydiv = $("<div>")
         .addClass("card w-100 m-3 p-3")
         .addClass("theCard")
         .addClass("align-top")
@@ -97,13 +97,13 @@ function createCard(data) {
       let applySave = $("<td class='align-middle'>").html(saveBtn);
       let applyNote = $("<td class='align-middle'>").html(noteBtn);
       
-      thediv.append(divBody);
-      // thediv.append(theImg);
-      thediv.append(theTitle);
-      thediv.append(theBody);
-      thediv.append(applySave);
-      thediv.append(applyNote);
-      $(".articles").append(thediv)
+      mydiv.append(divBody);
+      // mydiv.append(theImg);
+      mydiv.append(theTitle);
+      mydiv.append(theBody);
+      mydiv.append(applySave);
+      mydiv.append(applyNote);
+      $(".articles").append(mydiv)
       }   
   };
   
