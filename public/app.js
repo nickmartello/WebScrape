@@ -71,7 +71,7 @@ $(document).ready(function () {
 
       $.get("/api/notes/" + articleID._id).then(function (data) {
           console.log(data)
-         let modalText = $("<div class='container-fluid text-center'>").append(
+          let modalText = $("<div class='container-fluid text-center'>").append(
               $("<h4>").text("Notes For Article: " + articleID._id),
               $("<hr>"),
               $("<ul class='list-group note-container'>"),
