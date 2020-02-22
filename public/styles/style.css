@@ -1,0 +1,34 @@
+body {
+  background-image: url("../imgs/newspaper.jpg");
+  background-color: #cccccc;
+ }
+
+a {
+    color: black
+  }
+ 
+  .parallax {
+  
+    height: 100%;
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    overflow-x: hidden;
+    overflow-y: auto;
+    perspective: 2px;
+  }
+  
+.theCard {
+      display: inline-block;
+      align-items: center;
+  }
+    
+  .text {
+      color: white;
+      font-size: 32px;
+  }
+  
+  #jumbo {
+    background-color: transparent;
+  }

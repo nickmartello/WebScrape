@@ -1,138 +1,155 @@
-$(document).ready(function () {
-  $(document).on("click", ".scrape-new", scrapeArticle);
-  $(document).on("click", ".clear", clearArticle);
-  $(document).on("click", ".clear-saved", clearSavedArticle);
-  $(document).on("click", ".save", saveArticle);
-  $(document).on("click", ".delete", deleteSavedArticle);
-  $(document).on("click", ".notes", addNotesToArticle);
-  $(document).on("click", ".note-save", saveNote);
-  $(document).on("click", ".note-delete", deleteNote);
+$(document).on("click", ".save", function() {
 
-  function scrapeArticle() {
-      $(".article-container").prepend('<div class="loader"></div>');
-      $.get("/api/fetch").then(function (data) {
-          console.log(data)
-          setTimeout(
-              function () {
-                  window.location.href = "/";
-              }, 2000);
-      });
-  }
+  var thisId = $(this).attr("id");
 
-  function clearArticle() {
-      $.get("/api/clear").then(function (data) {
-          console.log(data)
-          $(".articleContainer").empty();
-          location.reload();
-      });
-  }
-
-  function clearSavedArticle() {
-      $.get("/api/clear/saved").then(function (data) {
-          console.log(data)
-          $(".articleContainer").empty();
-          location.reload();
-      });
-  }
-
-  function saveArticle() {
-      let articleID = $(this)
-          .parents(".card")
-          .data();
-
-      $(this)
-          .parents(".card")
-          .remove();
-
-      $.ajax({
-          method: "PUT",
-          url: "/api/save/" + articleID._id
-      }).then(function (data) {
-          console.log(data);
-      });
-  }
-
-  function deleteSavedArticle() {
-      let articleID = $(this)
-          .parents(".card")
-          .data();
-
-      $(this)
-          .parents(".card")
-          .remove();
-
-      $.get("/api/deleteSaved/" + articleID._id);
-  }
-
-  function addNotesToArticle() {
-      let articleID = $(this)
-          .parents(".card")
-          .data();
-
-      $.get("/api/notes/" + articleID._id).then(function (data) {
-          console.log(data)
-          let modalText = $("<div class='container-fluid text-center'>").append(
-              $("<h4>").text("Notes For Article: " + articleID._id),
-              $("<hr>"),
-              $("<ul class='list-group note-container'>"),
-              $("<textarea placeholder='New Note' rows='4' cols='50'>"),
-              $("<button class='btn btn-success note-save'>Save Note</button>")
-          );
-          console.log(modalText)
-          bootbox.dialog({
-              message: modalText,
-              closeButton: true
-          });
-          let noteData = {
-              _id: articleID._id,
-              notes: data || []
-          };
-          console.log('noteData:' + JSON.stringify(noteData))
-          $(".note-save").data("article", noteData);
-          getAllNotes(noteData);
-      });
-  }
-
-  function deleteNote() {
-      let noteID = $(this).data("_id");
-      $.ajax({
-          url: "/api/notes/" + noteID,
-          method: "DELETE"
-      }).then(function () {
-          bootbox.hideAll();
-      });
-  }
-
-  function saveNote() {
-      let noteData;
-      let newNote = $(".bootbox-body textarea")
-          .val()
-          .trim();
-      console.log(newNote);
-      if (newNote) {
-          noteData = { _headlineId: $(this).data("article")._id, noteText: newNote };
-          console.log(noteData);
-          $.post("/api/notes", noteData).then(function () {
-              bootbox.hideAll();
-          });
-      }
-  }
-
-  function getAllNotes(data) {
-      let notesToRender = [];
-      let currentNote;
-      if (!data.notes.length) {
-          currentNote = $("<li class='list-group-item'>No notes for this article yet.</li>");
-          notesToRender.push(currentNote);
-      } else {
-          for (let i = 0; i < data.notes.length; i++) {
-              currentNote = $("<li class='list-group-item note'>")
-                  .text(data.notes[i].noteText)
-                  .append($("<button class='btn btn-danger note-delete'>x</button>"));
-              currentNote.children("button").data("_id", data.notes[i]._id);
-              notesToRender.push(currentNote);
-          }
-      }
-      $(".note-container").append(notesToRender);
-  }
+  $.ajax({
+    method: "PUT",
+    url: "/api/articles/" + thisId,
+    data: {
+      id: $(this).attr("id"),
+      saved: $(this).attr("saved")
+    }
+  })
+    .then(function(data) {
+      console.log(data);
+    });
 });
+
+$(document).on("click", ".read", function() {
+});
+
+$(document).on("click", ".note", function() {
+
+  var thisId = $(this).attr("id");
+  $(".submitNote").attr("note-id", thisId)
+
+  $.ajax({
+    method: "GET",
+    url: "/api/articles/" + thisId
+  })
+    .then(function(data) {
+      createModal(data)
+    });
+});
+
+$(document).on("click", ".submitNote", function() {
+  event.preventDefault()
+  console.log("this works")
+
+  var thisId = $(this).attr("note-id");
+  console.log("*-*-*-*-")
+  console.log(thisId)
+  console.log("*-*-*-*-")  
+
+  $.ajax({
+    method: "POST",
+    url: "/api/articles/" + thisId,
+    data: {
+      title: $(".noteTitle").val(),
+      body: $(".articleNote").val()
+    }
+  })
+    .then(function(data) {
+      $("#notes").hide()
+      $(".noteTitle").val("")
+      $(".articleNote").val("")
+    });
+
+});
+
+
+function createCard(data) {
+
+  for (let i = 0; i < data.length; i++) {  
+
+      let thediv = $("<div>")
+        .addClass("card w-100 m-3 p-3")
+        .addClass("theCard")
+        .addClass("align-top")
+        .attr("style", "width: 18rem;")
+        .attr("id", "cardBody")
+
+      let divBody = $("<div>").addClass("card-body");
+
+      let theTitle = $("<p>")
+        .addClass("card-text")
+        .html(`<h2>${data[i].title}</h2>`)
+
+      let theBody = $("<p>")
+        .addClass("card-text")
+        .html(data[i].blurb ? `${data[i].blurb}` : `<p>Sorry - No Summary Available</p> `)
+
+      var saveBtn = $("<button>")
+        .attr("id", data[i]._id)
+        .attr("saved", data[i].saved)
+        .addClass("save")
+        .addClass("btn btn-warning")
+        .addClass("btn-sm")
+        .html(data[i].saved ? " Remove Article " :  " Save Article ")
+    
+      var noteBtn = $("<button>")
+        .attr("id", data[i]._id)
+        .addClass("note")
+        .addClass("btn btn-warning")
+        .addClass("btn-sm")
+        .html(" Create Note ")
+ 
+      let applySave = $("<td class='align-middle'>").html(saveBtn);
+      let applyNote = $("<td class='align-middle'>").html(noteBtn);
+      
+      thediv.append(divBody);
+      // thediv.append(theImg);
+      thediv.append(theTitle);
+      thediv.append(theBody);
+      thediv.append(applySave);
+      thediv.append(applyNote);
+      $(".articles").append(thediv)
+      }   
+  };
+  
+
+
+function createModal(project) {
+  console.log(project)
+
+  $("#project-modal").remove()
+
+      let modal = $("<div>").addClass("modal fade")
+          .attr("id" , "project-modal")
+          .attr("tabindex", "-1")
+          .attr("role", "dialog")
+          .attr("aria-labelledby", "exampleModalCenterTitle")
+          .attr("aria-hidden", "true")
+      let modalDialog = $("<div>").addClass("modal-dialog modal-dialog-centered")
+          .attr("role", "document")
+      let modalContent = $("<div>").addClass("modal-content")
+      let modalHeader = $("<div>").addClass("modal-header theModal")
+          .html(`<h5 class="modal-title" id="exampleModalLongTitle">${project.title}</h5>
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                      </button>`)
+      let modalBody = $("<div>").addClass("modal-body")
+
+      
+
+                      
+      let modalFooter = $("<div>").addClass("modal-footer theModal")
+          .html(`
+          <button type="button" class="btn btn-secondary submitNote" data-dismiss="modal" note-id=${project._id}>Submit</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          `)
+       
+      modalContent.append(modalHeader)
+      modalContent.append(modalBody)
+      modalContent.append(modalFooter)
+      modalDialog.append(modalContent)
+      modal.append(modalDialog)
+      $("body").append(modal)
+
+      if (project.note) {
+        $(".noteTitle").val(project.note.title);
+        $(".articleNote").val(project.note.body);
+      }
+
+      $("#project-modal").modal('show')
+}

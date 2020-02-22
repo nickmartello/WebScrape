@@ -26,7 +26,7 @@ app.set("view engine", "handlebars");
 require("./routes/apiRoutes")(app);
 require("./routes/htmlRoutes")(app);
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/webscrape";
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/articledb";
 
 mongoose.connect(MONGODB_URI);
 
